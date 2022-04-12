@@ -136,6 +136,61 @@ void factor()
     }
 }
 
+void expression()
+{
+    if (list[listIndex].type == subsym)
+    {
+        listIndex++;
+        term();
+        emit(12, registercounter, 0, registercounter);
+
+        while (list[listIndex].type == addsym || list[listIndex].type == subsym)
+        {
+            if (list[listIndex].type == addsym)
+            {
+                listIndex++;
+                term();
+                emit(13, registercounter - 1, registercounter - 1, registercounter);
+                registercounter--;
+            }
+            else
+            {
+                listIndex++;
+                term();
+                emit(14, registercounter - 1, registercounter - 1, registercounter);
+                registercounter--;
+            }
+        }
+    }
+    else
+    {
+        term();
+
+        while (list[listIndex].type == addsym || list[listIndex].type == subsym)
+        {
+            if (list[listIndex].type == addsym)
+            {
+                listIndex++;
+                term();
+                emit(13, registercounter - 1, registercounter - 1, registercounter);
+                registercounter--;
+            }
+            else
+            {
+                listIndex++;
+                term();
+                emit(14, registercounter - 1, registercounter - 1, registercounter);
+                registercounter--;
+            }
+        }
+    }
+
+    if (list[listIndex].type == lparenthesissym || list[listIndex].type == identsym || list[listIndex].type == numbersym)
+    {
+        printparseerror(22);
+    }
+}
+
 void term()
 {
     factor();
