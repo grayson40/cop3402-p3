@@ -136,6 +136,35 @@ void factor()
     }
 }
 
+void term()
+{
+    factor();
+    while (list[listIndex].type == multsym || list[listIndex].type == divsym || list[listIndex].type == modsym)
+    {
+        if (list[listIndex].type == multsym)
+        {
+            listIndex++;
+            factor();
+            emit(15, registercounter - 1, registercounter - 1, registercounter);
+            registercounter--;
+        }
+        else if (list[listIndex].type == divsym)
+        {
+            listIndex++;
+            factor();
+            emit(16, registercounter - 1, registercounter - 1, registercounter);
+            registercounter--;
+        }
+        else
+        {
+            listIndex++;
+            factor();
+            emit(17, registercounter - 1, registercounter - 1, registercounter);
+            registercounter--;
+        }
+    }
+}
+
 instruction *parse(lexeme *list, int printTable, int printCode)
 {
     // set up program variables
