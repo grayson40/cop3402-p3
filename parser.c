@@ -6,6 +6,7 @@
 #define MAX_CODE_LENGTH 200
 #define MAX_SYMBOL_COUNT 50
 #define MAX_REG_COUNT 10
+#define MAX_SYMBOL_LENGTH 11
 
 // generated code
 instruction *code;
@@ -15,6 +16,12 @@ int cIndex;
 symbol *table;
 int tIndex;
 
+// list of instructions
+lexeme *list;
+int listIndex = 0;
+
+int level, registercounter;
+
 void emit(int opname, int reg, int level, int mvalue);
 void addToSymbolTable(int k, char n[], int s, int l, int a, int m);
 void mark();
@@ -23,6 +30,111 @@ int findsymbol(char name[], int kind);
 void printparseerror(int err_code);
 void printsymboltable();
 void printassemblycode();
+void factor();
+void term();
+void expression();
+
+void factor()
+{
+    char symbolName[MAX_SYMBOL_LENGTH];
+    int symIndex, arrayIdxReg, varLocReg;
+
+    if (list[listIndex].type == identsym)
+    {
+        // Get symbol name
+        strcpy(list[listIndex].name, symbolName);
+        listIndex++;
+
+        // Check for presence of left bracket
+        if (list[listIndex].type == lbracketsym)
+        {
+            listIndex++;
+
+            // Try to find an array
+            symIndex = findsymbol(symbolName, 2);
+            if (symIndex == -1)
+            {
+                // Print error if var
+                if (findsymbol(symbolName, 1) != -1)
+                    printparseerror(11);
+                // Print error if procedure
+                else if (findsymbol(symbolName, 3) != 1)
+                    printparseerror(9);
+                else
+                    printparseerror(10);
+            }
+
+            expression();
+            arrayIdxReg = registercounter;
+
+            if (list[listIndex].type != rbracketsym)
+                printparseerror(5);
+
+            listIndex++;
+            registercounter++;
+
+            if (registercounter >= 10)
+                printparseerror(14);
+
+            emit(1, registercounter, 0, table[symIndex].addr);
+            emit(13, arrayIdxReg, arrayIdxReg, registercounter);
+            emit(3, registercounter, level - table[symIndex].level, arrayIdxReg);
+        }
+        else
+        {
+            // Try to find a var
+            symIndex = findsymbol(symbolName, 1);
+            if (symIndex == -1)
+            {
+                // Print error if array
+                if (findsymbol(symbolName, 2) != -1)
+                    printparseerror(12);
+                // Print error if procedure
+                else if (findsymbol(symbolName, 3) != 1)
+                    printparseerror(9);
+                else
+                    printparseerror(10);
+            }
+
+            registercounter++;
+
+            if (registercounter >= 10)
+                printparseerror(14);
+
+            emit(1, registercounter, 0, table[symIndex].addr);
+
+            varLocReg = registercounter;
+
+            emit(3, registercounter, level - table[symIndex].level, varLocReg);
+        }
+    }
+    else if (list[listIndex].type == numbersym)
+    {
+        registercounter++;
+
+        if (registercounter >= 10)
+            printparseerror(14);
+
+        emit(1, registercounter, 0, list[listIndex].value);
+
+        listIndex++;
+    }
+    else if (list[listIndex].type == lparenthesissym)
+    {
+        listIndex++;
+
+        expression();
+
+        if (list[listIndex].type != rparenthesissym)
+            printparseerror(23);
+
+        listIndex++;
+    }
+    else
+    {
+        printparseerror(24);
+    }
+}
 
 instruction *parse(lexeme *list, int printTable, int printCode)
 {
