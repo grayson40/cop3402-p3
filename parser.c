@@ -9,11 +9,16 @@
 
 // generated code
 instruction *code;
-int cIndex;
+int codeIndex;
 
 // symbol table
 symbol *table;
-int tIndex;
+int tableIndex;
+
+lexeme *list;
+int listIndex;
+
+int level;
 
 void emit(int opname, int reg, int level, int mvalue);
 void addToSymbolTable(int k, char n[], int s, int l, int a, int m);
@@ -24,49 +29,73 @@ void printparseerror(int err_code);
 void printsymboltable();
 void printassemblycode();
 
-instruction *parse(lexeme *list, int printTable, int printCode)
+instruction *parse(int printTable, int printCode)
 {
     // set up program variables
     code = malloc(sizeof(instruction) * MAX_CODE_LENGTH);
-    cIndex = 0;
+    codeIndex = 0;
     table = malloc(sizeof(symbol) * MAX_SYMBOL_COUNT);
-    tIndex = 0;
+    tableIndex = 0;
+
+
+    emit(7, 0, 0, 0);
+    addToSymbolTable(3, "main", 0, 0, 0, 0);
+    level = -1;
+    block();
+    // check for error 1 ===============================================================================================
+    emit(11, 0, 0, 0);
+    code[0].m = table[0].addr;
+    for (int i = 0; i < codeIndex; i++)
+    {
+        if (code[i].opcode == 5)
+            code[i].m =  table[code[i].m].addr;
+
+    }
+
 
     // print off table and code
     if (printTable)
         printsymboltable();
     if (printCode)
-        printassemblycode();
+        printassemblycode(); 
 
     // mark the end of the code
-    code[cIndex].opcode = -1;
+    code[codeIndex].opcode = -1;
     return code;
+}
+
+int block()
+{
+    level++;
+    int procedureIndex = tableIndex - 1;
+
+    level--;
 }
 
 void emit(int opname, int reg, int level, int mvalue)
 {
-    code[cIndex].opcode = opname;
-    code[cIndex].r = reg;
-    code[cIndex].l = level;
-    code[cIndex].m = mvalue;
-    cIndex++;
+    code[codeIndex].opcode = opname;
+    code[codeIndex].r = reg;
+    code[codeIndex].l = level;
+    code[codeIndex].m = mvalue;
+    codeIndex++;
 }
 
 void addToSymbolTable(int k, char n[], int s, int l, int a, int m)
 {
-    table[tIndex].kind = k;
-    strcpy(table[tIndex].name, n);
-    table[tIndex].size = s;
-    table[tIndex].level = l;
-    table[tIndex].addr = a;
-    table[tIndex].mark = m;
-    tIndex++;
+    table[tableIndex].kind = k;
+    strcpy(table[tableIndex].name, n);
+    table[tableIndex].size = s;
+    table[tableIndex].level = l;
+    table[tableIndex].addr = a;
+    table[tableIndex].mark = m;
+    tableIndex++;
 }
 
 void mark()
 {
     int i;
-    for (i = tIndex - 1; i >= 0; i--)
+    for (i = tableIndex - 1; i >= 0; i--)
     {
         if (table[i].mark == 1)
             continue;
@@ -79,7 +108,7 @@ void mark()
 int multipledeclarationcheck(char name[])
 {
     int i;
-    for (i = 0; i < tIndex; i++)
+    for (i = 0; i < tableIndex; i++)
         if (table[i].mark == 0 && table[i].level == level && strcmp(name, table[i].name) == 0)
             return i;
     return -1;
@@ -90,7 +119,7 @@ int findsymbol(char name[], int kind)
     int i;
     int max_idx = -1;
     int max_lvl = -1;
-    for (i = 0; i < tIndex; i++)
+    for (i = 0; i < tableIndex; i++)
     {
         if (table[i].mark == 0 && table[i].kind == kind && strcmp(name, table[i].name) == 0)
         {
@@ -195,7 +224,7 @@ void printsymboltable()
     printf("Symbol Table:\n");
     printf("Kind | Name        | Size | Level | Address | Mark\n");
     printf("---------------------------------------------------\n");
-    for (i = 0; i < tIndex; i++)
+    for (i = 0; i < tableIndex; i++)
         printf("%4d | %11s | %5d | %4d | %5d | %5d\n", table[i].kind, table[i].name, table[i].size, table[i].level, table[i].addr, table[i].mark);
 
     free(table);
@@ -206,7 +235,7 @@ void printassemblycode()
 {
     int i;
     printf("Line\tOP Code\tOP Name\tR\tL\tM\n");
-    for (i = 0; i < cIndex; i++)
+    for (i = 0; i < codeIndex; i++)
     {
         printf("%d\t", i);
         printf("%d\t", code[i].opcode);
