@@ -223,13 +223,13 @@ void statement()
     else if(list[listIndex].type == readsym)
     {
         listIndex++;
-        if(list[listIndex] != identsym)
+        if(list[listIndex].type != identsym)
         {
             printparseerror(20);
         }
         strcpy(symbolName, list[listIndex].name);
         listIndex++;
-        if(list[listIndex] == lbracketsym)
+        if(list[listIndex].type == lbracketsym)
         {
             listIndex++;
             symIndex = findsymbol(symbolName, 2);
@@ -250,7 +250,7 @@ void statement()
             }
             expression();
             arrayIdxReg = registercounter;
-            if(list[listIndex] != rbracketsym)
+            if(list[listIndex].type != rbracketsym)
             {
                 printparseerror(5);
             }
