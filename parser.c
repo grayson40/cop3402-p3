@@ -6,19 +6,23 @@
 #define MAX_CODE_LENGTH 200
 #define MAX_SYMBOL_COUNT 50
 #define MAX_REG_COUNT 10
-
 // generated code
 instruction *code;
-int codeIndex;
+int cIndex;
 
 // symbol table
 symbol *table;
-int tableIndex;
+int tIndex;
 
+// list of instructions
 lexeme *list;
-int listIndex;
+int listIndex = 0;
 
-int level;
+int level, registercounter;
+
+
+
+
 
 void emit(int opname, int reg, int level, int mvalue);
 void addToSymbolTable(int k, char n[], int s, int l, int a, int m);
@@ -28,27 +32,35 @@ int findsymbol(char name[], int kind);
 void printparseerror(int err_code);
 void printsymboltable();
 void printassemblycode();
+void factor();
+void term();
+void expression();
+void block();
+int var_decleration();
+void procedure_decleration();
 
-instruction *parse(int printTable, int printCode)
+
+instruction *parse(lexeme *list, int printTable, int printCode)
 {
     // set up program variables
     code = malloc(sizeof(instruction) * MAX_CODE_LENGTH);
-    codeIndex = 0;
+    cIndex = 0;
     table = malloc(sizeof(symbol) * MAX_SYMBOL_COUNT);
-    tableIndex = 0;
+    tIndex = 0;
 
 
     emit(7, 0, 0, 0);
     addToSymbolTable(3, "main", 0, 0, 0, 0);
     level = -1;
     block();
-    // check for error 1 ===============================================================================================
+    if (list[listIndex].type != periodsym)
+        printparseerror(1);
     emit(11, 0, 0, 0);
     code[0].m = table[0].addr;
-    for (int i = 0; i < codeIndex; i++)
+    for (int i = 0; i < cIndex; i++)
     {
         if (code[i].opcode == 5)
-            code[i].m =  table[code[i].m].addr;
+            code[i].m = table[code[i].m].addr;
 
     }
 
@@ -60,42 +72,174 @@ instruction *parse(int printTable, int printCode)
         printassemblycode(); 
 
     // mark the end of the code
-    code[codeIndex].opcode = -1;
+    code[cIndex].opcode = -1;
     return code;
 }
 
-int block()
+void block()
 {
     level++;
-    int procedureIndex = tableIndex - 1;
-
+    int procedureIndex = tIndex - 1;
+    int x = var_decleration();
+    procedure_decleration();
+    table[procedureIndex].addr = cIndex;
+    emit(6, 0, 0, x);
+    statement();
+    mark();
     level--;
+}
+
+int var_decleration()
+{
+    int memory_size = 3;
+    char* symbole_name;
+    if (list[listIndex].type == varsym)    
+    {
+        do 
+        {
+            listIndex++;
+            if (list[listIndex].type != identsym)
+                printparseerror(2); 
+            if (multipledeclarationcheck(list[listIndex].name) != -1)
+                printparseerror(3);
+            strcpy(symbole_name, list[listIndex].name);
+            listIndex++;
+            if (list[listIndex].type == lbracketsym)
+            {
+                listIndex++;
+                if (list[listIndex].type != numbersym || list[listIndex].value == 0)
+                    printparseerror(4);
+                int array_size = list[listIndex].value;
+                listIndex++;
+                if (list[listIndex].type == multsym || list[listIndex].type == divsym || list[listIndex].type == modsym || list[listIndex].type == addsym || list[listIndex].type == subsym)
+                    printparseerror(4);
+                else if (list[listIndex].type != rbracketsym)
+                    printparseerror(5);
+                listIndex++;
+                addToSymbolTable(2, symbole_name, array_size, level, memory_size, 0);
+                memory_size += array_size;
+
+            }
+            else
+            {
+                addToSymbolTable(1, symbole_name, 0, level, memory_size, 0);
+                memory_size++;
+            }
+        }
+        while (list[listIndex].type == commasym);
+
+        if (list[listIndex].type == identsym)
+            printparseerror(6);
+        else if (list[listIndex].type != semicolonsym)
+            printparseerror(7);
+        listIndex++;
+    }
+    else
+        return memory_size;
+
+}
+
+void procedure_decleration()
+{   
+    char* symbol_name;
+    while (list[listIndex].type == procsym)
+    {
+        listIndex++;
+        if (list[listIndex].type != identsym)
+            printparseerror(2);
+        else if (multipledeclarationcheck(list[listIndex].name) != -1)
+            printparseerror(3);
+        strcpy(symbol_name, list[listIndex].name);
+        listIndex++;
+        if (list[listIndex].type != semicolonsym)
+            printparseerror(8);
+        listIndex++;
+        addToSymbolTable(3, symbol_name, 0, level, 0, 0);
+        block();
+        if (list[listIndex].type != semicolonsym)
+            printparseerror(7);
+        listIndex++;
+        emit(2, 0, 0, 0);
+
+    }
+    
+
+}
+
+void condition()
+{
+    expression();
+    if (list[listIndex].type == eqlsym)
+    {
+        expression();
+        listIndex++;
+        emit(18, registercounter - 1, registercounter - 1, registercounter);
+        registercounter--;
+    }
+    else if (list[listIndex].type == neqsym) 
+    {
+        expression();
+        listIndex++;
+        emit(19, registercounter - 1, registercounter - 1, registercounter);
+        registercounter--;
+    }
+    else if (list[listIndex].type == lsssym)
+    {
+        expression();
+        listIndex++;
+        emit(20, registercounter - 1, registercounter - 1, registercounter);
+        registercounter--;
+    }
+    else if (list[listIndex].type == leqsym) 
+    {
+        expression();
+        listIndex++;
+        emit(21, registercounter - 1, registercounter - 1, registercounter);
+        registercounter--;
+    }
+    else if (list[listIndex].type == gtrsym) 
+    {
+        expression();
+        listIndex++;
+        emit(22, registercounter - 1, registercounter - 1, registercounter);
+        registercounter--;
+    }
+    else if (list[listIndex].type == geqsym) 
+    {
+        expression();
+        listIndex++;
+        emit(23, registercounter - 1, registercounter - 1, registercounter);
+        registercounter--;
+    }
+    else
+        printparseerror(22);
+
 }
 
 void emit(int opname, int reg, int level, int mvalue)
 {
-    code[codeIndex].opcode = opname;
-    code[codeIndex].r = reg;
-    code[codeIndex].l = level;
-    code[codeIndex].m = mvalue;
-    codeIndex++;
+    code[cIndex].opcode = opname;
+    code[cIndex].r = reg;
+    code[cIndex].l = level;
+    code[cIndex].m = mvalue;
+    cIndex++;
 }
 
 void addToSymbolTable(int k, char n[], int s, int l, int a, int m)
 {
-    table[tableIndex].kind = k;
-    strcpy(table[tableIndex].name, n);
-    table[tableIndex].size = s;
-    table[tableIndex].level = l;
-    table[tableIndex].addr = a;
-    table[tableIndex].mark = m;
-    tableIndex++;
+    table[tIndex].kind = k;
+    strcpy(table[tIndex].name, n);
+    table[tIndex].size = s;
+    table[tIndex].level = l;
+    table[tIndex].addr = a;
+    table[tIndex].mark = m;
+    tIndex++;
 }
 
 void mark()
 {
     int i;
-    for (i = tableIndex - 1; i >= 0; i--)
+    for (i = tIndex - 1; i >= 0; i--)
     {
         if (table[i].mark == 1)
             continue;
@@ -108,7 +252,7 @@ void mark()
 int multipledeclarationcheck(char name[])
 {
     int i;
-    for (i = 0; i < tableIndex; i++)
+    for (i = 0; i < tIndex; i++)
         if (table[i].mark == 0 && table[i].level == level && strcmp(name, table[i].name) == 0)
             return i;
     return -1;
@@ -119,7 +263,7 @@ int findsymbol(char name[], int kind)
     int i;
     int max_idx = -1;
     int max_lvl = -1;
-    for (i = 0; i < tableIndex; i++)
+    for (i = 0; i < tIndex; i++)
     {
         if (table[i].mark == 0 && table[i].kind == kind && strcmp(name, table[i].name) == 0)
         {
@@ -224,7 +368,7 @@ void printsymboltable()
     printf("Symbol Table:\n");
     printf("Kind | Name        | Size | Level | Address | Mark\n");
     printf("---------------------------------------------------\n");
-    for (i = 0; i < tableIndex; i++)
+    for (i = 0; i < tIndex; i++)
         printf("%4d | %11s | %5d | %4d | %5d | %5d\n", table[i].kind, table[i].name, table[i].size, table[i].level, table[i].addr, table[i].mark);
 
     free(table);
@@ -235,7 +379,7 @@ void printassemblycode()
 {
     int i;
     printf("Line\tOP Code\tOP Name\tR\tL\tM\n");
-    for (i = 0; i < codeIndex; i++)
+    for (i = 0; i < cIndex; i++)
     {
         printf("%d\t", i);
         printf("%d\t", code[i].opcode);
