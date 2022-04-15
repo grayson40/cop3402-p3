@@ -36,6 +36,8 @@ void expression();
 void block();
 int var_decleration();
 void procedure_decleration();
+void statement();
+void condition();
 
 void statement()
 {
