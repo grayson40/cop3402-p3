@@ -555,6 +555,66 @@ instruction *parse(lexeme *list, int printTable, int printCode)
     return code;
 }
 
+void block()
+{
+    level++;
+    int procedureIndex = tIndex - 1;
+    int x = var_decleration();
+    procedure_decleration();
+    table[procedureIndex].addr = cIndex;
+    emit(6, 0, 0, x);
+    statement();
+    mark();
+    level--;
+}
+
+int var_decleration()
+{
+    int memory_size = 3;
+    char *symbole_name;
+    if (list[listIndex].type == varsym)
+    {
+        do
+        {
+            listIndex++;
+            if (list[listIndex].type != identsym)
+                printparseerror(2);
+            if (multipledeclarationcheck(list[listIndex].name) != -1)
+                printparseerror(3);
+            strcpy(symbole_name, list[listIndex].name);
+            listIndex++;
+            if (list[listIndex].type == lbracketsym)
+            {
+                listIndex++;
+                if (list[listIndex].type != numbersym || list[listIndex].value == 0)
+                    printparseerror(4);
+                int array_size = list[listIndex].value;
+                listIndex++;
+                if (list[listIndex].type == multsym || list[listIndex].type == divsym || list[listIndex].type == modsym || list[listIndex].type == addsym || list[listIndex].type == subsym)
+                    printparseerror(4);
+                else if (list[listIndex].type != rbracketsym)
+                    printparseerror(5);
+                listIndex++;
+                addToSymbolTable(2, symbole_name, array_size, level, memory_size, 0);
+                memory_size += array_size;
+            }
+            else
+            {
+                addToSymbolTable(1, symbole_name, 0, level, memory_size, 0);
+                memory_size++;
+            }
+        } while (list[listIndex].type == commasym);
+
+        if (list[listIndex].type == identsym)
+            printparseerror(6);
+        else if (list[listIndex].type != semicolonsym)
+            printparseerror(7);
+        listIndex++;
+    }
+    else
+        return memory_size;
+}
+
 void procedure_decleration()
 {
     char *symbol_name;
