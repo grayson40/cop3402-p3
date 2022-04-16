@@ -338,7 +338,7 @@ void factor()
     if (list[listIndex].type == identsym)
     {
         // Get symbol name
-        strcpy(list[listIndex].name, symbolName);
+        strcpy(symbolName, list[listIndex].name);
         listIndex++;
 
         // Check for presence of left bracket
@@ -374,6 +374,7 @@ void factor()
 
             emit(1, registercounter, 0, table[symIndex].addr);
             emit(13, arrayIdxReg, arrayIdxReg, registercounter);
+            registercounter--;
             emit(3, registercounter, level - table[symIndex].level, arrayIdxReg);
         }
         else
@@ -526,6 +527,7 @@ instruction *parse(lexeme *list, int printTable, int printCode)
     cIndex = 0;
     table = malloc(sizeof(symbol) * MAX_SYMBOL_COUNT);
     tIndex = 0;
+    registercounter=-1;
 
     emit(7, 0, 0, 0);
     addToSymbolTable(3, "main", 0, 0, 0, 0);
@@ -572,6 +574,7 @@ int var_decleration()
 {
     int memory_size = 3;
     char *symbole_name;
+    int array_size;
     if (list[listIndex].type == varsym)
     {
         do
@@ -588,7 +591,7 @@ int var_decleration()
                 listIndex++;
                 if (list[listIndex].type != numbersym || list[listIndex].value == 0)
                     printparseerror(4);
-                int array_size = list[listIndex].value;
+                array_size = list[listIndex].value;
                 listIndex++;
                 if (list[listIndex].type == multsym || list[listIndex].type == divsym || list[listIndex].type == modsym || list[listIndex].type == addsym || list[listIndex].type == subsym)
                     printparseerror(4);
@@ -610,6 +613,7 @@ int var_decleration()
         else if (list[listIndex].type != semicolonsym)
             printparseerror(7);
         listIndex++;
+        return memory_size;
     }
     else
         return memory_size;
@@ -644,48 +648,48 @@ void condition()
     expression();
     if (list[listIndex].type == eqlsym)
     {
-        expression();
         listIndex++;
+        expression();
         emit(18, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
     else if (list[listIndex].type == neqsym)
     {
-        expression();
         listIndex++;
+        expression();
         emit(19, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
     else if (list[listIndex].type == lsssym)
     {
-        expression();
         listIndex++;
+        expression();
         emit(20, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
     else if (list[listIndex].type == leqsym)
     {
-        expression();
         listIndex++;
+        expression();
         emit(21, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
     else if (list[listIndex].type == gtrsym)
     {
-        expression();
         listIndex++;
+        expression();
         emit(22, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
     else if (list[listIndex].type == geqsym)
     {
-        expression();
         listIndex++;
+        expression();
         emit(23, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
     else
-        printparseerror(22);
+        printparseerror(21);
 }
 
 void emit(int opname, int reg, int level, int mvalue)
