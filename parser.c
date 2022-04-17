@@ -6,7 +6,7 @@
 #define MAX_CODE_LENGTH 200
 #define MAX_SYMBOL_COUNT 50
 #define MAX_REG_COUNT 10
-#define MAX_SYMBOL_LENGTH 11
+#define MAX_SYMBOL_LENGTH 12
 
 // generated code
 instruction *code;
@@ -38,6 +38,43 @@ int var_decleration();
 void procedure_decleration();
 void statement();
 void condition();
+
+instruction *parse(lexeme *list, int printTable, int printCode)
+{
+    // set up program variables
+    code = malloc(sizeof(instruction) * MAX_CODE_LENGTH);
+    cIndex = 0;
+    table = malloc(sizeof(symbol) * MAX_SYMBOL_COUNT);
+    tIndex = 0;
+    registercounter=-1;
+    level = -1;
+
+    emit(7, 0, 0, 0);
+    addToSymbolTable(3, "main", 0, 0, 0, 0);
+    block();
+
+    if (list[listIndex].type != periodsym)
+        printparseerror(1);
+
+    emit(11, 0, 0, 0);
+    code[0].m = table[0].addr;
+
+    for (int i = 0; i < cIndex; i++)
+    {
+        if (code[i].opcode == 5)
+            code[i].m = table[code[i].m].addr;
+    }
+
+    // print off table and code
+    if (printTable)
+        printsymboltable();
+    if (printCode)
+        printassemblycode();
+
+    // mark the end of the code
+    code[cIndex].opcode = -1;
+    return code;
+}
 
 void statement()
 {
@@ -518,43 +555,6 @@ void term()
         }
     }
     return;
-}
-
-instruction *parse(lexeme *list, int printTable, int printCode)
-{
-    // set up program variables
-    code = malloc(sizeof(instruction) * MAX_CODE_LENGTH);
-    cIndex = 0;
-    table = malloc(sizeof(symbol) * MAX_SYMBOL_COUNT);
-    tIndex = 0;
-    registercounter=-1;
-
-    emit(7, 0, 0, 0);
-    addToSymbolTable(3, "main", 0, 0, 0, 0);
-    level = -1;
-    block();
-
-    if (list[listIndex].type != periodsym)
-        printparseerror(1);
-
-    emit(11, 0, 0, 0);
-    code[0].m = table[0].addr;
-
-    for (int i = 0; i < cIndex; i++)
-    {
-        if (code[i].opcode == 5)
-            code[i].m = table[code[i].m].addr;
-    }
-
-    // print off table and code
-    if (printTable)
-        printsymboltable();
-    if (printCode)
-        printassemblycode();
-
-    // mark the end of the code
-    code[cIndex].opcode = -1;
-    return code;
 }
 
 void block()
