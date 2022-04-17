@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #include "compiler.h"
 
 #define MAX_CODE_LENGTH 200
@@ -17,8 +16,7 @@ int cIndex;
 symbol *table;
 int tIndex;
 
-// list of instructions
-//lexeme *list;
+// index of instructions
 int listIndex = 0;
 
 int level, registercounter;
