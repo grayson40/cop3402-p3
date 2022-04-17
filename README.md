@@ -10,7 +10,7 @@
 
 # 
 
-## 1 Modification was made to printparseerror function in parser.c:
+# 1 Modification was made to printparseerror function in parser.c:
 
-### "exit(0)" added after free(code) and free(table) inside printparseerror function
-#### This line of code was added to make sure the program exits whenever a parser error is encountered
+## "exit(0)" added after free(code) and free(table) inside printparseerror function
+### This line of code was added to make sure the program exits whenever a parser error is encountered
