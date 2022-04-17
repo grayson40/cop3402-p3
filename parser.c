@@ -47,16 +47,21 @@ instruction *parse(lexeme *list, int printTable, int printCode)
     tIndex = 0;
     registercounter=-1;
 
+    //emit JMP
     emit(7, 0, 0, 0);
+
+    //add to symbol table
     addToSymbolTable(3, "main", 0, 0, 0, 0);
     level = -1;
     block(list);
 
+    //check for period symbol
     if (list[listIndex].type != periodsym){
         printparseerror(1);
         return NULL;
     }
     
+    //emit HLT
     emit(11, 0, 0, 0);
     code[0].m = table[0].addr;
 
@@ -87,6 +92,7 @@ void statement(lexeme *list)
     {
         strcpy(symbolName, list[listIndex].name);
         listIndex++;
+        //check for left bracket
         if (list[listIndex].type == lbracketsym)
         {
             listIndex++;
@@ -108,11 +114,15 @@ void statement(lexeme *list)
             }
             expression(list);
             arrayIdxReg = registercounter;
+
+            //check if it is a right bracket
             if (list[listIndex].type != rbracketsym)
             {
                 printparseerror(5);
             }
             listIndex++;
+
+            //check if it is an assign symbol
             if (list[listIndex].type != assignsym)
             {
                 printparseerror(13);
@@ -124,12 +134,15 @@ void statement(lexeme *list)
             {
                 printparseerror(14);
             }
+
+            //emit LIT, ADD, STO
             emit(1, registercounter, 0, table[symIndex].addr);
             emit(13, arrayIdxReg, arrayIdxReg, registercounter);
             registercounter--;
             emit(4, registercounter, level - table[symIndex].level, arrayIdxReg);
             registercounter -= 2;
         }
+        //left bracket not found
         else
         {
             symIndex = findsymbol(symbolName, 1);
@@ -153,6 +166,8 @@ void statement(lexeme *list)
             {
                 printparseerror(14);
             }
+
+            //emit LIT
             emit(1, registercounter, 0, table[symIndex].addr);
             varLocReg = registercounter;
             if (list[listIndex].type != assignsym)
@@ -161,6 +176,8 @@ void statement(lexeme *list)
             }
             listIndex++;
             expression(list);
+
+            //emit STO
             emit(4, registercounter, level - table[symIndex].level, varLocReg);
             registercounter -= 2;
         }
@@ -170,6 +187,7 @@ void statement(lexeme *list)
     else if (list[listIndex].type == callsym)
     {
         listIndex++;
+        //check if it is an ident symbol
         if (list[listIndex].type != identsym)
         {
             printparseerror(15);
@@ -186,6 +204,8 @@ void statement(lexeme *list)
                 printparseerror(10);
             }
         }
+
+        //emit CAL
         emit(5, 0, level - table[symIndex].level, symIndex);
         listIndex++;
     }
@@ -193,11 +213,14 @@ void statement(lexeme *list)
     // begin-end
     else if (list[listIndex].type == beginsym)
     {
+        //do while semicolon symbol is found
         do
         {
             listIndex++;
             statement(list);
         } while (list[listIndex].type == semicolonsym);
+
+        //check if it is an end symbol
         if (list[listIndex].type != endsym)
         {
             if (list[listIndex].type == identsym || list[listIndex].type == callsym || list[listIndex].type == beginsym || list[listIndex].type == ifsym || list[listIndex].type == dosym || list[listIndex].type == readsym || list[listIndex].type == writesym)
@@ -218,6 +241,8 @@ void statement(lexeme *list)
         listIndex++;
         condition(list);
         jpcIndex = cIndex;
+
+        //emit JPC
         emit(8, registercounter, 0, 0);
         registercounter--;
         if (list[listIndex].type != questionsym)
@@ -226,10 +251,14 @@ void statement(lexeme *list)
         }
         listIndex++;
         statement(list);
+
+        //check for colon symbol
         if (list[listIndex].type == colonsym)
         {
             listIndex++;
             jmpIndex = cIndex;
+
+            //emit JMP
             emit(7, 0, 0, 0);
             code[jpcIndex].m = cIndex;
             statement(list);
@@ -247,6 +276,8 @@ void statement(lexeme *list)
         listIndex++;
         loopIndex = cIndex;
         statement(list);
+
+        //check for while symbol
         if (list[listIndex].type != whilesym)
         {
             printparseerror(19);
@@ -258,6 +289,8 @@ void statement(lexeme *list)
         {
             printparseerror(14);
         }
+        
+        //emit LIT, EQL, JPC
         emit(1, registercounter, 0, 0);
         emit(18, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
@@ -269,12 +302,15 @@ void statement(lexeme *list)
     else if (list[listIndex].type == readsym)
     {
         listIndex++;
+        //check if it is an identifier symbol
         if (list[listIndex].type != identsym)
         {
             printparseerror(20);
         }
         strcpy(symbolName, list[listIndex].name);
         listIndex++;
+
+        //check for left bracket
         if (list[listIndex].type == lbracketsym)
         {
             listIndex++;
@@ -306,18 +342,23 @@ void statement(lexeme *list)
             {
                 printparseerror(14);
             }
+
+            //emit RED
             emit(10, registercounter, 0, 0);
             registercounter++;
             if (registercounter >= 10)
             {
                 printparseerror(14);
             }
+
+            //emit LIT, ADD, STO
             emit(1, registercounter, 0, table[symIndex].addr);
             emit(13, arrayIdxReg, arrayIdxReg, registercounter);
             registercounter--;
             emit(4, registercounter, level - table[symIndex].level, arrayIdxReg);
             registercounter -= 2;
         }
+        //left bracket not found
         else
         {
             symIndex = findsymbol(symbolName, 1);
@@ -341,6 +382,8 @@ void statement(lexeme *list)
             {
                 printparseerror(14);
             }
+
+            //emit LIT
             emit(1, registercounter, 0, table[symIndex].addr);
             varLocReg = registercounter;
             registercounter++;
@@ -348,6 +391,8 @@ void statement(lexeme *list)
             {
                 printparseerror(14);
             }
+
+            //emit RED, STO
             emit(10, registercounter, 0, 0);
             emit(4, registercounter, level - table[symIndex].level, varLocReg);
             registercounter -= 2;
@@ -359,6 +404,8 @@ void statement(lexeme *list)
     {
         listIndex++;
         expression(list);
+
+        //emit WRT
         emit(9, registercounter, 0, 0);
         registercounter--;
     }
@@ -373,6 +420,7 @@ void factor(lexeme *list)
     char symbolName[MAX_SYMBOL_LENGTH]="";
     int symIndex, arrayIdxReg, varLocReg;
 
+    //check for identifier symbol
     if (list[listIndex].type == identsym)
     {
         // Get symbol name
@@ -412,6 +460,7 @@ void factor(lexeme *list)
                 printparseerror(14);
             }
 
+            //emit LIT, ADD, LOD
             emit(1, registercounter, 0, table[symIndex].addr);
             emit(13, arrayIdxReg, arrayIdxReg, registercounter);
             registercounter--;
@@ -439,13 +488,16 @@ void factor(lexeme *list)
                 printparseerror(14);
             }
 
+            //emit LIT
             emit(1, registercounter, 0, table[symIndex].addr);
 
             varLocReg = registercounter;
 
+            //emit LOD
             emit(3, registercounter, level - table[symIndex].level, varLocReg);
         }
     }
+    //check for number symbol
     else if (list[listIndex].type == numbersym)
     {
         registercounter++;
@@ -454,10 +506,12 @@ void factor(lexeme *list)
             printparseerror(14);
         }
 
+        //emit LIT
         emit(1, registercounter, 0, list[listIndex].value);
 
         listIndex++;
     }
+    //check for left parenthesis
     else if (list[listIndex].type == lparenthesissym)
     {
         listIndex++;
@@ -465,6 +519,7 @@ void factor(lexeme *list)
         expression(list);
 
         if (list[listIndex].type != rparenthesissym){
+            //error 23
             printparseerror(23);
         }
 
@@ -472,6 +527,7 @@ void factor(lexeme *list)
     }
     else
     {
+        //error 24
         printparseerror(24);
     }
     return;
@@ -479,18 +535,23 @@ void factor(lexeme *list)
 
 void expression(lexeme *list)
 {
+    //check for sub symbol
     if (list[listIndex].type == subsym)
     {
         listIndex++;
         term(list);
+        
+        //emit NEG
         emit(12, registercounter, 0, registercounter);
 
+        //while we encounter add symbol or sub symbol
         while (list[listIndex].type == addsym || list[listIndex].type == subsym)
         {
             if (list[listIndex].type == addsym)
             {
                 listIndex++;
                 term(list);
+                //emit ADD
                 emit(13, registercounter - 1, registercounter - 1, registercounter);
                 registercounter--;
             }
@@ -498,21 +559,25 @@ void expression(lexeme *list)
             {
                 listIndex++;
                 term(list);
+                //emit SUB
                 emit(14, registercounter - 1, registercounter - 1, registercounter);
                 registercounter--;
             }
         }
     }
+    //sub symbol not found
     else
     {
         term(list);
 
+        //while we encounter add symbol or sub symbol
         while (list[listIndex].type == addsym || list[listIndex].type == subsym)
         {
             if (list[listIndex].type == addsym)
             {
                 listIndex++;
                 term(list);
+                //emit ADD
                 emit(13, registercounter - 1, registercounter - 1, registercounter);
                 registercounter--;
             }
@@ -520,6 +585,7 @@ void expression(lexeme *list)
             {
                 listIndex++;
                 term(list);
+                //emit SUB
                 emit(14, registercounter - 1, registercounter - 1, registercounter);
                 registercounter--;
             }
@@ -528,6 +594,7 @@ void expression(lexeme *list)
 
     if (list[listIndex].type == lparenthesissym || list[listIndex].type == identsym || list[listIndex].type == numbersym)
     {
+        //error 22
         printparseerror(22);
     }
     return;
@@ -536,12 +603,14 @@ void expression(lexeme *list)
 void term(lexeme *list)
 {
     factor(list);
+    //while we encounter multsym, divsym, or modsym
     while (list[listIndex].type == multsym || list[listIndex].type == divsym || list[listIndex].type == modsym)
     {
         if (list[listIndex].type == multsym)
         {
             listIndex++;
             factor(list);
+            //emit MUL
             emit(15, registercounter - 1, registercounter - 1, registercounter);
             registercounter--;
         }
@@ -549,6 +618,7 @@ void term(lexeme *list)
         {
             listIndex++;
             factor(list);
+            //emit DIV
             emit(16, registercounter - 1, registercounter - 1, registercounter);
             registercounter--;
         }
@@ -556,6 +626,7 @@ void term(lexeme *list)
         {
             listIndex++;
             factor(list);
+            //emit MOD
             emit(17, registercounter - 1, registercounter - 1, registercounter);
             registercounter--;
         }
@@ -570,6 +641,8 @@ void block(lexeme *list)
     int x = var_decleration(list);
     procedure_decleration(list);
     table[procedureIndex].addr = cIndex;
+
+    //emit INC
     emit(6, 0, 0, x);
     statement(list);
     mark();
@@ -581,11 +654,15 @@ int var_decleration(lexeme *list)
     int memory_size = 3;
     char symbole_name[MAX_SYMBOL_LENGTH]="";
     int array_size;
+
+    //check for var symbol
     if (list[listIndex].type == varsym)
     {
+        //do while we encounter a comma symbol
         do
         {
             listIndex++;
+            //check if it is an ident symbol
             if (list[listIndex].type != identsym){
                 printparseerror(2);
             }
@@ -594,6 +671,7 @@ int var_decleration(lexeme *list)
             }
             strcpy(symbole_name, list[listIndex].name);
             listIndex++;
+            //check for left bracket
             if (list[listIndex].type == lbracketsym)
             {
                 listIndex++;
@@ -609,19 +687,24 @@ int var_decleration(lexeme *list)
                     printparseerror(5);
                 }
                 listIndex++;
+                
+                //add to symbol table
                 addToSymbolTable(2, symbole_name, array_size, level, memory_size, 0);
                 memory_size += array_size;
             }
             else
             {
+                //add to symbol table
                 addToSymbolTable(1, symbole_name, 0, level, memory_size, 0);
                 memory_size++;
             }
         } while (list[listIndex].type == commasym);
 
+        //check for ident symbol
         if (list[listIndex].type == identsym){
             printparseerror(6);
         }
+        //check if it is a semi colon symbol
         else if (list[listIndex].type != semicolonsym){
             printparseerror(7);
         }
@@ -638,6 +721,7 @@ void procedure_decleration(lexeme *list)
     while (list[listIndex].type == procsym)
     {
         listIndex++;
+        //check if it is an ident symbol
         if (list[listIndex].type != identsym){
             printparseerror(2);
         }
@@ -656,6 +740,8 @@ void procedure_decleration(lexeme *list)
             printparseerror(7);
         }
         listIndex++;
+
+        //emit RET
         emit(2, 0, 0, 0);
     }
 }
@@ -667,6 +753,7 @@ void condition(lexeme *list)
     {
         listIndex++;
         expression(list);
+        //emit EQL
         emit(18, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
@@ -674,6 +761,7 @@ void condition(lexeme *list)
     {
         listIndex++;
         expression(list);
+        //emit NEQ
         emit(19, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
@@ -681,6 +769,7 @@ void condition(lexeme *list)
     {
         listIndex++;
         expression(list);
+        //emit LSS
         emit(20, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
@@ -688,6 +777,7 @@ void condition(lexeme *list)
     {
         listIndex++;
         expression(list);
+        //emit LEQ
         emit(21, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
@@ -695,6 +785,7 @@ void condition(lexeme *list)
     {
         listIndex++;
         expression(list);
+        //emit GTR
         emit(22, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
@@ -702,10 +793,12 @@ void condition(lexeme *list)
     {
         listIndex++;
         expression(list);
+        //GEQ
         emit(23, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
     else{
+        //error 21
         printparseerror(21);
     }
     return;
@@ -857,6 +950,7 @@ void printparseerror(int err_code)
 
     free(code);
     free(table);
+    //exit since a parser error was encounted
     exit(0);
     return;
 }
