@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "compiler.h"
 
 #define MAX_CODE_LENGTH 200
@@ -47,22 +48,24 @@ instruction *parse(lexeme *list, int printTable, int printCode)
     table = malloc(sizeof(symbol) * MAX_SYMBOL_COUNT);
     tIndex = 0;
     registercounter=-1;
-    level = -1;
 
     emit(7, 0, 0, 0);
     addToSymbolTable(3, "main", 0, 0, 0, 0);
+    level = -1;
     block(list);
 
-    if (list[listIndex].type != periodsym)
+    if (list[listIndex].type != periodsym){
         printparseerror(1);
-
+        return NULL;
+    }
+    
     emit(11, 0, 0, 0);
     code[0].m = table[0].addr;
 
     for (int i = 0; i < cIndex; i++)
     {
         if (code[i].opcode == 5)
-            code[i].m = table[code[i].m].addr;
+           code[i].m = table[code[i].m].addr;
     }
 
     // print off table and code
@@ -400,14 +403,16 @@ void factor(lexeme *list)
             expression(list);
             arrayIdxReg = registercounter;
 
-            if (list[listIndex].type != rbracketsym)
+            if (list[listIndex].type != rbracketsym){
                 printparseerror(5);
+            }
 
             listIndex++;
             registercounter++;
 
-            if (registercounter >= 10)
+            if (registercounter >= 10){
                 printparseerror(14);
+            }
 
             emit(1, registercounter, 0, table[symIndex].addr);
             emit(13, arrayIdxReg, arrayIdxReg, registercounter);
@@ -432,8 +437,9 @@ void factor(lexeme *list)
 
             registercounter++;
 
-            if (registercounter >= 10)
+            if (registercounter >= 10){
                 printparseerror(14);
+            }
 
             emit(1, registercounter, 0, table[symIndex].addr);
 
@@ -446,8 +452,9 @@ void factor(lexeme *list)
     {
         registercounter++;
 
-        if (registercounter >= 10)
+        if (registercounter >= 10){
             printparseerror(14);
+        }
 
         emit(1, registercounter, 0, list[listIndex].value);
 
@@ -459,8 +466,9 @@ void factor(lexeme *list)
 
         expression(list);
 
-        if (list[listIndex].type != rparenthesissym)
+        if (list[listIndex].type != rparenthesissym){
             printparseerror(23);
+        }
 
         listIndex++;
     }
@@ -580,23 +588,28 @@ int var_decleration(lexeme *list)
         do
         {
             listIndex++;
-            if (list[listIndex].type != identsym)
+            if (list[listIndex].type != identsym){
                 printparseerror(2);
-            if (multipledeclarationcheck(list[listIndex].name) != -1)
+            }
+            if (multipledeclarationcheck(list[listIndex].name) != -1){
                 printparseerror(3);
+            }
             strcpy(symbole_name, list[listIndex].name);
             listIndex++;
             if (list[listIndex].type == lbracketsym)
             {
                 listIndex++;
-                if (list[listIndex].type != numbersym || list[listIndex].value == 0)
+                if (list[listIndex].type != numbersym || list[listIndex].value == 0){
                     printparseerror(4);
+                }
                 array_size = list[listIndex].value;
                 listIndex++;
-                if (list[listIndex].type == multsym || list[listIndex].type == divsym || list[listIndex].type == modsym || list[listIndex].type == addsym || list[listIndex].type == subsym)
+                if (list[listIndex].type == multsym || list[listIndex].type == divsym || list[listIndex].type == modsym || list[listIndex].type == addsym || list[listIndex].type == subsym){
                     printparseerror(4);
-                else if (list[listIndex].type != rbracketsym)
+                }
+                else if (list[listIndex].type != rbracketsym){
                     printparseerror(5);
+                }
                 listIndex++;
                 addToSymbolTable(2, symbole_name, array_size, level, memory_size, 0);
                 memory_size += array_size;
@@ -608,10 +621,12 @@ int var_decleration(lexeme *list)
             }
         } while (list[listIndex].type == commasym);
 
-        if (list[listIndex].type == identsym)
+        if (list[listIndex].type == identsym){
             printparseerror(6);
-        else if (list[listIndex].type != semicolonsym)
+        }
+        else if (list[listIndex].type != semicolonsym){
             printparseerror(7);
+        }
         listIndex++;
         return memory_size;
     }
@@ -625,19 +640,23 @@ void procedure_decleration(lexeme *list)
     while (list[listIndex].type == procsym)
     {
         listIndex++;
-        if (list[listIndex].type != identsym)
+        if (list[listIndex].type != identsym){
             printparseerror(2);
-        else if (multipledeclarationcheck(list[listIndex].name) != -1)
+        }
+        else if (multipledeclarationcheck(list[listIndex].name) != -1){
             printparseerror(3);
+        }
         strcpy(symbol_name, list[listIndex].name);
         listIndex++;
-        if (list[listIndex].type != semicolonsym)
+        if (list[listIndex].type != semicolonsym){
             printparseerror(8);
+        }
         listIndex++;
         addToSymbolTable(3, symbol_name, 0, level, 0, 0);
         block(list);
-        if (list[listIndex].type != semicolonsym)
+        if (list[listIndex].type != semicolonsym){
             printparseerror(7);
+        }
         listIndex++;
         emit(2, 0, 0, 0);
     }
@@ -688,8 +707,10 @@ void condition(lexeme *list)
         emit(23, registercounter - 1, registercounter - 1, registercounter);
         registercounter--;
     }
-    else
+    else{
         printparseerror(21);
+    }
+    return;
 }
 
 void emit(int opname, int reg, int level, int mvalue)
@@ -838,6 +859,7 @@ void printparseerror(int err_code)
 
     free(code);
     free(table);
+    exit(0);
     return;
 }
 
