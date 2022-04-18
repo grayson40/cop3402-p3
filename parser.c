@@ -88,7 +88,7 @@ void statement(lexeme *list)
     int arrayIdxReg, symIndex, varLocReg, jpcIndex, jmpIndex, loopIndex;
 
     // assignment
-    if (list[listIndex].type == assignsym)
+    if (list[listIndex].type == identsym)
     {
         strcpy(symbolName, list[listIndex].name);
         listIndex++;
